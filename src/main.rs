@@ -44,7 +44,7 @@ fn main() {
                 println!("AI（白）は {:?} に置いたにゃ〜", pos);
                 osero.run(with, pos);
 
-                // 🆕 ここで盤面を表示！
+                // ここで盤面を表示！
                 println!("{}", osero.express());
                 let (black, white, none) = osero.many();
                 println!("黒 X: {}　白 O: {}　空白: {}", black, white, none);
@@ -238,10 +238,10 @@ impl Osero {
             return;
         }
 
-        // まず置くにゃ
+        // まず置く
         self.set(with, at);
 
-        // 4方向それぞれでひっくり返し処理を呼ぶにゃ
+        // 4方向それぞれでひっくり返し処理を呼ぶ
         self.process(
             with,
             at,
@@ -265,7 +265,7 @@ impl Osero {
             at,
             Self::get_downer_right_line_parts,
             Self::set_downer_right_line,
-        ); // 斜め反対方向も同じセット関数使うにゃ
+        );
     }
 
     fn is_changeable(
@@ -484,7 +484,7 @@ fn change(line: Vec<Pattern>, with: Pattern) -> Vec<Pattern> {
     let mut result: Vec<Pattern> = vec![];
     for point in line.iter() {
         if *point == Pattern::None {
-            return line; // 無効にゃ
+            return line;
         }
         if *point == with {
             for i in result.len()..line.len() {
@@ -492,11 +492,11 @@ fn change(line: Vec<Pattern>, with: Pattern) -> Vec<Pattern> {
                     result.push(push);
                 }
             }
-            return result; // 挟めてたから返すにゃ
+            return result;
         }
         result.push(point.switched());
     }
-    line // 最後まで見ても挟めてなかったら元のまま返すにゃ
+    line
 }
 
 fn is_changeable(line: Vec<Pattern>, with: Pattern) -> bool {
@@ -508,12 +508,12 @@ fn is_changeable(line: Vec<Pattern>, with: Pattern) -> bool {
 
     for point in line.iter() {
         if *point == Pattern::None {
-            return false; // 空きが出たら無効にゃ
+            return false; // 空きが出たら無効
         }
         if *point == with {
-            return has_opponent; // 相手の石を挟んでたら true にゃ
+            return has_opponent; // 相手の石を挟んでたら true
         }
-        has_opponent = true;
+        has_opponent = true; //ちゃんと相手のこま、踏む必要があるので、相手の石を挟んでいたらtrue
     }
 
     false
@@ -522,7 +522,7 @@ fn is_changeable(line: Vec<Pattern>, with: Pattern) -> bool {
 fn add(mut before: Vec<Pattern>, my: Pattern, after: Vec<Pattern>) -> Vec<Pattern> {
     before.push(my);
     before.extend(after);
-    before // ←返り値忘れてた！
+    before
 }
 
 //使わない可能性あり
@@ -534,7 +534,7 @@ fn to_array(vec: Vec<Pattern>) -> Option<[Pattern; 8]> {
 impl Osero {
     pub fn count_all_flips(&self, with: Pattern, at: (usize, usize)) -> usize {
         if self.get(at) != Some(Pattern::None) {
-            return 0; // すでに石があったらだめにゃ
+            return 0; // すでに石があったらだめ
         }
 
         let dirs = [
@@ -587,7 +587,7 @@ impl Osero {
             }
         }
 
-        let mut rng = rand::rng(); // ここは rand::thread_rng() などを使うかも
+        let mut rng = rand::rng();
         best_moves.choose(&mut rng).copied()
     }
 }
@@ -599,10 +599,10 @@ fn count_flips(line: Vec<Pattern>, with: Pattern) -> usize {
     let mut count = 0;
     for point in line.iter() {
         if *point == Pattern::None {
-            return 0; // 無効にゃ
+            return 0;
         }
         if *point == with {
-            return count; // 挟めた数にゃ
+            return count;
         }
         count += 1;
     }
