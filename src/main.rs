@@ -95,10 +95,11 @@ fn main() {
                 } else {
                     println!("⚠️ 入力が空です。もう一度入力してください。");
                 }
-            } else {
-                println!("置けないので強制的にパスします。");
-                with = with.switched();
             }
+        } else {
+            println!("置けないので強制的にパスします。");
+            with = with.switched();
+            continue;
         }
     }
 
