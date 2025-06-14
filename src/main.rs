@@ -37,62 +37,67 @@ fn main() {
         }
 
         // AIターン（白）
-        if with == Pattern::White {
-            if let Some(pos) = osero.best_move(with) {
-                println!("\n-----------------------------");
-                println!("😼『うにゃっ、そこがよさそうだにゃ……』");
-                println!("AI（白）は {:?} に置いたにゃ〜", pos);
-                osero.run(with, pos);
+        if osero.is_moveable(with) {
+            if with == Pattern::White {
+                if let Some(pos) = osero.best_move(with) {
+                    println!("\n-----------------------------");
+                    println!("😼『うにゃっ、そこがよさそうだにゃ……』");
+                    println!("AI（白）は {:?} に置いたにゃ〜", pos);
+                    osero.run(with, pos);
 
-                // ここで盤面を表示！
+                    // ここで盤面を表示！
+                    println!("{}", osero.express());
+                    let (black, white, none) = osero.many();
+                    println!("黒 X: {}　白 O: {}　空白: {}", black, white, none);
+
+                    with = with.switched();
+                } else {
+                    println!("😿『置けないにゃ…パスするにゃ』");
+                    with = with.switched();
+                }
+                continue;
+            }
+
+            // プレイヤーターン（黒）
+            if with == Pattern::Black {
+                println!("\n-----------------------------");
                 println!("{}", osero.express());
                 let (black, white, none) = osero.many();
                 println!("黒 X: {}　白 O: {}　空白: {}", black, white, none);
+                println!(
+                    "{} のターンです。座標を2つ半角スペースで入力してください（例: `3 2`）",
+                    with
+                );
 
-                with = with.switched();
-            } else {
-                println!("😿『置けないにゃ…パスするにゃ』");
-                with = with.switched();
-            }
-            continue;
-        }
+                let mut pos = String::new();
+                std::io::stdin().read_line(&mut pos).ok();
 
-        // プレイヤーターン（黒）
-        if with == Pattern::Black {
-            println!("\n-----------------------------");
-            println!("{}", osero.express());
-            let (black, white, none) = osero.many();
-            println!("黒 X: {}　白 O: {}　空白: {}", black, white, none);
-            println!(
-                "{} のターンです。座標を2つ半角スペースで入力してください（例: `3 2`）",
-                with
-            );
+                if !pos.trim().is_empty() {
+                    let vec = pos
+                        .split_whitespace()
+                        .map(|a| a.to_string())
+                        .collect::<Vec<String>>();
 
-            let mut pos = String::new();
-            std::io::stdin().read_line(&mut pos).ok();
+                    let mut points: Vec<usize> =
+                        vec.iter().filter_map(|s| s.parse::<usize>().ok()).collect();
 
-            if !pos.trim().is_empty() {
-                let vec = pos
-                    .split_whitespace()
-                    .map(|a| a.to_string())
-                    .collect::<Vec<String>>();
-
-                let mut points: Vec<usize> =
-                    vec.iter().filter_map(|s| s.parse::<usize>().ok()).collect();
-
-                if points.len() == 2 {
-                    let at = (points[0], points[1]);
-                    if osero.is_runable(with, at) {
-                        osero.run(with, at);
-                        with = with.switched();
+                    if points.len() == 2 {
+                        let at = (points[0], points[1]);
+                        if osero.is_runable(with, at) {
+                            osero.run(with, at);
+                            with = with.switched();
+                        } else {
+                            println!("その場所には置けません。もう一度入力してください。");
+                        }
                     } else {
-                        println!("その場所には置けません。もう一度入力してください。");
+                        println!("⚠️ 座標は2つ必要です。例: `3 2` のように入力してください。");
                     }
                 } else {
-                    println!("⚠️ 座標は2つ必要です。例: `3 2` のように入力してください。");
+                    println!("⚠️ 入力が空です。もう一度入力してください。");
                 }
             } else {
-                println!("⚠️ 入力が空です。もう一度入力してください。");
+                println!("置けないので強制的にパスします。");
+                with = with.switched();
             }
         }
     }
