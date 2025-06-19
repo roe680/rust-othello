@@ -36,8 +36,8 @@ fn main() {
             println!("{}は無効です。", level_str);
             println!("例: 1");
         } else {
-            if let Ok(num) = level_str.parse::<usize>() {
-                level = num;
+            if let Ok(num) = level_str.parse::<i32>() {
+                level = num as usize;
                 break;
             } else {
                 println!("{}は無効です。", level_str);
