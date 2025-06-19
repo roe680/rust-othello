@@ -27,6 +27,24 @@ impl Display for Pattern {
 fn main() {
     let mut osero = Osero::default();
     let mut with = Pattern::Black;
+    let level;
+    loop {
+        println!("レベルを選んでください");
+        let mut level_str = String::new();
+        std::io::stdin().read_line(&mut level_str).ok();
+        if level_str.trim().is_empty() {
+            println!("{}は無効です。", level_str);
+            println!("例: 1");
+        } else {
+            if let Ok(num) = level_str.parse::<usize>() {
+                level = num;
+                break;
+            } else {
+                println!("{}は無効です。", level_str);
+                println!("例: 1");
+            }
+        }
+    }
 
     println!("オセロ対決スタートです！");
     println!("黒（Black）が先手です。\n");
@@ -37,23 +55,23 @@ fn main() {
         }
 
         // AIターン（白）
-        if osero.is_moveable(with) {
+        if osero.is_moveable_with(with) {
             if with == Pattern::White {
-                if let Some(pos) = osero.best_move(with) {
+                if let Some(pos) = osero.best_move(with, level) {
                     println!("\n-----------------------------");
                     println!("😼『うにゃっ、そこがよさそうだにゃ……』");
                     println!("AI（白）は {:?} に置いたにゃ〜", pos);
-                    osero.run(with, pos);
+                    osero.put(with, pos);
 
                     // ここで盤面を表示！
                     println!("{}", osero.express());
                     let (black, white, none) = osero.many();
                     println!("黒 X: {}　白 O: {}　空白: {}", black, white, none);
 
-                    with = with.switched();
+                    with = with.fliped();
                 } else {
                     println!("😿『置けないにゃ…パスするにゃ』");
-                    with = with.switched();
+                    with = with.fliped();
                 }
                 continue;
             }
@@ -83,9 +101,9 @@ fn main() {
 
                     if points.len() == 2 {
                         let at = (points[0], points[1]);
-                        if osero.is_runable(with, at) {
-                            osero.run(with, at);
-                            with = with.switched();
+                        if osero.is_putabele(with, at) {
+                            osero.put(with, at);
+                            with = with.fliped();
                         } else {
                             println!("その場所には置けません。もう一度入力してください。");
                         }
@@ -98,7 +116,7 @@ fn main() {
             }
         } else {
             println!("置けないので強制的にパスします。");
-            with = with.switched();
+            with = with.fliped();
             continue;
         }
     }
@@ -136,6 +154,7 @@ fn index_to_str(i: i32) -> String {
     .to_string()
 }
 
+#[derive(Clone)]
 pub struct Osero(pub [Pattern; 64]);
 
 impl Default for Osero {
@@ -150,7 +169,7 @@ impl Default for Osero {
 }
 
 impl Pattern {
-    fn switched(&self) -> Pattern {
+    fn fliped(&self) -> Pattern {
         match self {
             Pattern::White => Pattern::Black,
             Pattern::Black => Pattern::White,
@@ -181,8 +200,8 @@ impl Osero {
 
     pub fn is_finished(&self) -> bool {
         let no_empty_cells = !self.0.iter().any(|p| *p == Pattern::None);
-        let no_moves_black = !self.is_moveable(Pattern::Black);
-        let no_moves_white = !self.is_moveable(Pattern::White);
+        let no_moves_black = !self.is_moveable_with(Pattern::Black);
+        let no_moves_white = !self.is_moveable_with(Pattern::White);
 
         no_empty_cells || (no_moves_black && no_moves_white)
     }
@@ -228,19 +247,19 @@ impl Osero {
         result
     }
 
-    pub fn is_runable(&self, with: Pattern, at: (usize, usize)) -> bool {
+    pub fn is_putabele(&self, with: Pattern, at: (usize, usize)) -> bool {
         at.0 < 8
             && at.1 < 8
             && self.get(at) == Some(Pattern::None)
             && with != Pattern::None
-            && (self.is_changeable(with, at, Self::get_horizontal_line_parts)
-                || self.is_changeable(with, at, Self::get_vertical_line_parts)
-                || self.is_changeable(with, at, Self::get_downer_right_line_parts)
-                || self.is_changeable(with, at, Self::get_upper_right_line_parts))
+            && (self.is_lines_changeable(with, at, Self::get_horizontal_line_parts)
+                || self.is_lines_changeable(with, at, Self::get_vertical_line_parts)
+                || self.is_lines_changeable(with, at, Self::get_downer_right_line_parts)
+                || self.is_lines_changeable(with, at, Self::get_upper_right_line_parts))
     }
 
-    pub fn run(&mut self, with: Pattern, at: (usize, usize)) {
-        if !self.is_runable(with, at) {
+    pub fn put(&mut self, with: Pattern, at: (usize, usize)) {
+        if !self.is_putabele(with, at) {
             return;
         }
 
@@ -274,7 +293,7 @@ impl Osero {
         );
     }
 
-    fn is_changeable(
+    fn is_lines_changeable(
         &self,
         my: Pattern,
         at: (usize, usize),
@@ -470,16 +489,27 @@ impl Osero {
         }
     }
 
-    pub fn is_moveable(&self, with: Pattern) -> bool {
+    pub fn is_moveable_with(&self, with: Pattern) -> bool {
         for y in 0..8 {
             for x in 0..8 {
-                let flips = self.count_all_flips(with, (x, y));
-                if flips > 0 {
+                if self.is_putabele(with, (x, y)) {
                     return true;
                 }
             }
         }
         false
+    }
+
+    pub fn get_moveable_points(&self, with: Pattern) -> Vec<(usize, usize)> {
+        let mut result = vec![];
+        for y in 0..8 {
+            for x in 0..8 {
+                if self.is_putabele(with, (x, y)) {
+                    result.push((x, y));
+                }
+            }
+        }
+        result
     }
 }
 
@@ -500,7 +530,7 @@ fn change(line: Vec<Pattern>, with: Pattern) -> Vec<Pattern> {
             }
             return result;
         }
-        result.push(point.switched());
+        result.push(point.fliped());
     }
     line
 }
@@ -562,6 +592,7 @@ impl Osero {
 }
 
 use rand::seq::IndexedRandom;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 const POSITION_SCORE: [i32; 64] = [
     100, -20, 10, 5, 5, 10, -20, 100, -20, -50, -2, -2, -2, -2, -50, -20, 10, -2, 5, 1, 1, 5, -2,
     10, 5, -2, 1, 0, 0, 1, -2, 5, 5, -2, 1, 0, 0, 1, -2, 5, 10, -2, 5, 1, 1, 5, -2, 10, -20, -50,
@@ -569,8 +600,16 @@ const POSITION_SCORE: [i32; 64] = [
 ];
 
 impl Osero {
-    pub fn best_move(&self, with: Pattern) -> Option<(usize, usize)> {
-        let mut best_score = i32::MIN;
+    pub fn best_move(&self, with: Pattern, level: usize) -> Option<(usize, usize)> {
+        if level == 1 {
+            self.level1(with)
+        } else {
+            self.minimax(level - 1, with)
+        }
+    }
+
+    pub fn level1(&self, with: Pattern) -> Option<(usize, usize)> {
+        let mut best_score = usize::MIN;
         let mut best_moves = vec![];
 
         for y in 0..8 {
@@ -579,10 +618,7 @@ impl Osero {
                 if flips == 0 {
                     continue;
                 }
-
-                let index = y * 8 + x;
-                let position_score = POSITION_SCORE[index];
-                let total_score = position_score + (flips as i32 * 10); // flipsを重視するなら重みを調整
+                let total_score = flips;
 
                 if total_score > best_score {
                     best_score = total_score;
@@ -595,6 +631,63 @@ impl Osero {
 
         let mut rng = rand::rng();
         best_moves.choose(&mut rng).copied()
+    }
+
+    fn get_total_score(&self, with: Pattern, at: (usize, usize), depth: usize) -> i32 {
+        if !self.is_putabele(with, at) {
+            return 0;
+        }
+        let mut osero = self.clone();
+
+        let index = at.1 * 8 + at.0;
+        let position_score = POSITION_SCORE[index];
+
+        let score = self.count_all_flips(with, at) as i32 * 10 + position_score;
+        osero.put(with, at);
+        let points = osero.get_moveable_points(with.fliped());
+        let mut depth_max_score: i32 = i32::MIN;
+        if depth > 0 {
+            if points.is_empty() {
+                depth_max_score = 0;
+            } else {
+                for at in points.clone() {
+                    let score = osero.get_total_score(with.fliped(), at, depth - 1);
+                    if score > depth_max_score {
+                        depth_max_score = score;
+                    }
+                }
+            }
+            score - depth_max_score
+        } else {
+            score
+        }
+    }
+
+    fn minimax(&self, depth: usize, with: Pattern) -> Option<(usize, usize)> {
+        let mut osero = self.clone();
+        let mut best_score = i32::MIN;
+        let mut best_moves = vec![];
+
+        let points = osero.get_moveable_points(with);
+        let scores = points
+            .par_iter()
+            .map(|at| {
+                let score = osero.get_total_score(with, *at, depth);
+                score
+            })
+            .collect::<Vec<i32>>();
+
+        for (i, score) in scores.iter().enumerate() {
+            if *score > best_score {
+                best_score = *score;
+                best_moves = vec![points[i]];
+            } else if *score == best_score {
+                best_moves.push(points[i]);
+            }
+        }
+        let mut rng = rand::rng();
+        let best_move = best_moves.choose(&mut rng).copied();
+        best_move
     }
 }
 
